@@ -27,7 +27,7 @@ Then set up the dependency in your `build.zig`:
         .optimize = optimize,
     })
 
-    exe.root_module.addImport("flags", flags_deb.module("flags"));
+    exe.root_module.addImport("flags", flags_dep.module("flags"));
 ```
 
 See the [examples](examples/) for basic usage.
