@@ -18,12 +18,12 @@ colors: *const ColorScheme,
 diagnostics: ?*Diagnostics,
 
 fn report(parser: *const Parser, comptime fmt: []const u8, args: anytype) void {
-    const stderr = Terminal.init(std.io.getStdErr());
+    const stderr = Terminal.init(std.fs.File.stderr());
     stderr.print(parser.colors.error_label, "Error: ", .{}) catch {};
     stderr.print(parser.colors.error_message, fmt ++ "\n", args) catch {};
 }
 
-pub fn parse(parser: *Parser, Flags: type, comptime command_name: []const u8) Error!Flags {
+pub fn parse(parser: *Parser, Flags: type, comptime command_name: []const u8) !Flags {
     const info = comptime meta.info(Flags);
     const help = comptime Help.generate(Flags, info, command_name);
 
@@ -49,7 +49,7 @@ pub fn parse(parser: *Parser, Flags: type, comptime command_name: []const u8) Er
         }
 
         if (std.mem.eql(u8, arg, "--help") or std.mem.eql(u8, arg, "-h")) {
-            try help.render(std.io.getStdOut(), parser.colors);
+            try help.render(std.fs.File.stdout(), parser.colors);
             return Error.PrintedHelp;
         }
 

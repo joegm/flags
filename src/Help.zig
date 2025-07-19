@@ -99,7 +99,7 @@ const Section = struct {
     }
 };
 
-pub fn render(help: *const Help, stdout: File, colors: *const ColorScheme) File.WriteError!void {
+pub fn render(help: *const Help, stdout: File, colors: *const ColorScheme) !void {
     const term = Terminal.init(stdout);
     try help.usage.renderToTerminal(term, colors);
 
