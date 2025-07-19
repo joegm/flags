@@ -18,7 +18,9 @@ colors: *const ColorScheme,
 diagnostics: ?*Diagnostics,
 
 fn report(parser: *const Parser, comptime fmt: []const u8, args: anytype) void {
-    const stderr = Terminal.init(std.fs.File.stderr());
+    const stderr_file = std.fs.File.stderr();
+    var stderr_file_writer = stderr_file.writer(&.{});
+    const stderr = Terminal.init(stderr_file, &stderr_file_writer.interface);
     stderr.print(parser.colors.error_label, "Error: ", .{}) catch {};
     stderr.print(parser.colors.error_message, fmt ++ "\n", args) catch {};
 }

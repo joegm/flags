@@ -18,7 +18,8 @@ pub const Usage = struct {
     body: []const u8,
 
     pub fn render(usage: Usage, stdout: File, colors: *const ColorScheme) File.WriteError!void {
-        const term = Terminal.init(stdout);
+        var stdout_writer = stdout.writer(&.{});
+        const term = Terminal.init(stdout, &stdout_writer.interface);
         try usage.renderToTerminal(term, colors);
     }
 
@@ -100,7 +101,8 @@ const Section = struct {
 };
 
 pub fn render(help: *const Help, stdout: File, colors: *const ColorScheme) !void {
-    const term = Terminal.init(stdout);
+    var stdout_writer = stdout.writer(&.{});
+    const term = Terminal.init(stdout, &stdout_writer.interface);
     try help.usage.renderToTerminal(term, colors);
 
     if (help.description) |description| {

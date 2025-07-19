@@ -9,10 +9,9 @@ const File = std.fs.File;
 writer: *std.io.Writer,
 config: tty.Config,
 
-pub fn init(file: File) Terminal {
-    var out = file.writer(&.{});
+pub fn init(file: File, writer: *std.io.Writer) Terminal {
     return .{
-        .writer = &out.interface,
+        .writer = writer,
         .config = tty.Config.detect(file),
     };
 }
