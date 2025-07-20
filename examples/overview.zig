@@ -13,7 +13,7 @@ pub fn main() !void {
     try std.json.stringify(
         options,
         .{ .whitespace = .indent_2 },
-        std.io.getStdOut().writer(),
+        std.fs.File.stdout().deprecatedWriter(),
     );
 }
 
