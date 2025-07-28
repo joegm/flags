@@ -8,7 +8,7 @@ pub fn main() !void {
     const args = try std.process.argsAlloc(gpa.allocator());
     defer std.process.argsFree(gpa.allocator(), args);
 
-    _ = flags.parseOrExit(args, "colors", Flags, .{
+    _ = flags.parse(args, "colors", Flags, .{
         // Use the `colors` option to provide a colorscheme for the error/help messages.
         // Specifying this as empty: `.colors = &.{}` will disable colors.
         // Each field is a list of type `std.io.tty.Color`.
