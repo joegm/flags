@@ -183,10 +183,23 @@ pub fn generate(Flags: type, info: meta.FlagsInfo, command: []const u8) Help {
     if (info.positionals.len > 0) {
         const pos_descriptions = meta.getDescriptions(std.meta.FieldType(Flags, .positional));
         var arguments = Section{ .header = "Arguments:" };
-        for (info.positionals) |arg| arguments.add(.{
-            .name = arg.arg_name,
-            .desc = @field(pos_descriptions, arg.field_name),
-        });
+        for (info.positionals) |arg| {
+            arguments.add(.{
+                .name = arg.arg_name,
+                .desc = @field(pos_descriptions, arg.field_name),
+            });
+
+            const T = meta.unwrapOptional(arg.type);
+            if (@typeInfo(T) == .@"enum") {
+                const variant_descriptions = meta.getDescriptions(T);
+                for (@typeInfo(T).@"enum".fields) |variant| {
+                    arguments.add(.{
+                        .name = "  " ++ meta.toKebab(variant.name),
+                        .desc = @field(variant_descriptions, variant.name),
+                    });
+                }
+            }
+        }
         help.sections = help.sections ++ .{arguments};
     }
     if (info.subcommands.len > 0) {
