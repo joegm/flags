@@ -16,7 +16,7 @@ An effortless command-line argument parser for Zig.
 To import flags to your project, run the following command:
 
 ```
-zig fetch --save git+https://github.com/n0s4/flags
+zig fetch --save git+https://github.com/joegm/flags
 ```
 
 Then set up the dependency in your `build.zig`:
