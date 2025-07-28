@@ -21,14 +21,14 @@ pub fn print(
     style: ColorScheme.Style,
     comptime format: []const u8,
     args: anytype,
-) File.WriteError!void {
+) void {
     for (style) |color| {
-        try terminal.config.setColor(terminal.writer, color);
+        terminal.config.setColor(terminal.writer, color) catch {};
     }
 
-    try terminal.writer.print(format, args);
+    terminal.writer.print(format, args) catch {};
 
     if (style.len > 0) {
-        try terminal.config.setColor(terminal.writer, .reset);
+        terminal.config.setColor(terminal.writer, .reset) catch {};
     }
 }

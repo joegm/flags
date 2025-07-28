@@ -17,15 +17,15 @@ pub const Usage = struct {
     command: []const u8,
     body: []const u8,
 
-    pub fn render(usage: Usage, stdout: File, colors: *const ColorScheme) File.WriteError!void {
+    pub fn render(usage: Usage, stdout: File, colors: *const ColorScheme) void {
         const term = Terminal.init(stdout);
-        try usage.renderToTerminal(term, colors);
+        usage.renderToTerminal(term, colors);
     }
 
-    pub fn renderToTerminal(usage: Usage, term: Terminal, colors: *const ColorScheme) !void {
-        try term.print(colors.header, "Usage: ", .{});
-        try term.print(colors.command_name, "{s}", .{usage.command});
-        try term.print(colors.usage, "{s}\n", .{usage.body});
+    pub fn renderToTerminal(usage: Usage, term: Terminal, colors: *const ColorScheme) void {
+        term.print(colors.header, "Usage: ", .{});
+        term.print(colors.command_name, "{s}", .{usage.command});
+        term.print(colors.usage, "{s}\n", .{usage.body});
     }
 
     pub fn generate(Flags: type, info: meta.FlagsInfo, command: []const u8) Usage {
@@ -99,42 +99,42 @@ const Section = struct {
     }
 };
 
-pub fn render(help: *const Help, stdout: File, colors: *const ColorScheme) File.WriteError!void {
+pub fn render(help: *const Help, stdout: File, colors: *const ColorScheme) void {
     const term = Terminal.init(stdout);
-    try help.usage.renderToTerminal(term, colors);
+    help.usage.renderToTerminal(term, colors);
 
     if (help.description) |description| {
-        try term.print(colors.command_description, "\n{s}\n", .{description});
+        term.print(colors.command_description, "\n{s}\n", .{description});
     }
 
     for (help.sections) |section| {
-        try term.print(colors.header, "\n{s}\n\n", .{section.header});
+        term.print(colors.header, "\n{s}\n\n", .{section.header});
 
         for (section.items) |item| {
-            try term.print(colors.option_name, "  {s}", .{item.name});
+            term.print(colors.option_name, "  {s}", .{item.name});
             if (item.desc) |desc| {
-                try term.print(&.{}, " ", .{});
+                term.print(&.{}, " ", .{});
 
                 // Ensure the description gets printed as it looks in the user's Flags struct
                 // (Left-align all lines, even with multi-line descriptions)
                 var lines = std.mem.tokenizeAny(u8, desc, "\r\n");
                 if (lines.next()) |line1| {
                     for (0..(section.max_name_len - item.name.len)) |_| {
-                        try term.print(&.{}, " ", .{});
+                        term.print(&.{}, " ", .{});
                     }
-                    try term.print(colors.description, "{s}", .{line1});
+                    term.print(colors.description, "{s}", .{line1});
                 }
 
                 while (lines.next()) |line| {
-                    try term.print(&.{}, "\n", .{});
+                    term.print(&.{}, "\n", .{});
                     for (0..(section.max_name_len + 3)) |_| {
-                        try term.print(&.{}, " ", .{});
+                        term.print(&.{}, " ", .{});
                     }
-                    try term.print(colors.description, "{s}", .{line});
+                    term.print(colors.description, "{s}", .{line});
                 }
             }
 
-            try term.print(&.{}, "\n", .{});
+            term.print(&.{}, "\n", .{});
         }
     }
 }
