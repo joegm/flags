@@ -166,7 +166,7 @@ pub fn generate(Flags: type, info: meta.FlagsInfo, command: []const u8) Help {
             const variant_descriptions = meta.getDescriptions(T);
             for (@typeInfo(T).@"enum".fields) |variant| {
                 options.add(.{
-                    .name = "  " ++ variant.name,
+                    .name = "  " ++ meta.toKebab(variant.name),
                     .desc = @field(variant_descriptions, variant.name),
                 });
             }
