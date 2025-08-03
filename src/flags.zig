@@ -3,6 +3,7 @@ const std = @import("std");
 pub const ColorScheme = @import("ColorScheme.zig");
 const Parser = @import("Parser.zig");
 const Help = @import("Help.zig");
+const meta = @import("meta.zig");
 
 pub const Options = struct {
     skip_first_arg: bool = true,
@@ -25,4 +26,13 @@ pub fn parse(
     };
 
     return parser.parse(Flags, exe_name);
+}
+
+pub fn printHelp(
+    comptime exe_name: []const u8,
+    Flags: type,
+    options: Options,
+) void {
+    const help = comptime Help.generate(Flags, meta.info(Flags), exe_name);
+    help.render(std.io.getStdOut(), options.colors);
 }
