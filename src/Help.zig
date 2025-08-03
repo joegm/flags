@@ -203,8 +203,9 @@ pub fn generate(Flags: type, info: meta.FlagsInfo, command: []const u8) Help {
         help.sections = help.sections ++ .{arguments};
     }
     if (info.subcommands.len > 0) {
-        const cmd_descriptions = meta.getDescriptions(std.meta.FieldType(Flags, .command));
-        var commands = Section{ .header = "Commands:" };
+        const T = meta.unwrapOptional(@FieldType(Flags, "command"));
+        const cmd_descriptions = meta.getDescriptions(T);
+        var commands = Section{ .header = if (info.optional_commands) "Commands: [Optional]" else "Commands:" };
         for (info.subcommands) |cmd| commands.add(.{
             .name = cmd.command_name,
             .desc = @field(cmd_descriptions, cmd.field_name),
