@@ -130,8 +130,12 @@ pub fn parse(parser: *Parser, Flags: type, comptime command_name: []const u8) Fl
         }
     }
 
-    if (!info.optional_commands and info.subcommands.len > 0 and !passed.command) {
-        parser.fatal("missing subcommand", .{});
+    if (info.subcommands.len > 0 and !passed.command) {
+        if (info.optional_commands) {
+            flags.command = null;
+        } else {
+            parser.fatal("missing subcommand", .{});
+        }
     }
 
     return flags;
