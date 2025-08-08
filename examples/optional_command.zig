@@ -27,57 +27,14 @@ const Flags = struct {
     // Optional description of some or all of the flags (must match field names in the struct).
     pub const descriptions = .{
         .force = "Use the force",
-        .optional = "You don't need this one",
-        .override = "You can change this if you want",
-        .required = "You have to set this!",
-        .age = "How old?",
-        .power = "How strong?",
-        .size = "How big?",
     };
 
     force: bool, // Set to `true` only if '--force' is passed.
 
-    optional: ?[]const u8, // Set to null if not passed.
-    override: []const u8 = "defaulty", // "defaulty" if not passed.
-    required: []const u8, // fatal error if not passed.
-
-    // Integer and float types are parsed automatically with specific error messages for bad input.
-    age: ?u8,
-    power: f32 = 9000,
-
-    // Restrict choice with enums:
-    size: enum {
-        small,
-        medium,
-        large,
-
-        // Displayed in the '--help' message.
-        pub const descriptions = .{
-            .small = "The least big",
-            .medium = "Not quite small, not quite big",
-            .large = "The biggest",
-        };
-    } = .medium,
-
-    // The 'positional' field is a special field that defines arguments that are not associated
-    // with any --flag. Hence the name "positional" arguments.
-    positional: struct {
-        first: []const u8,
-        second: u32,
-        // Optional positional arguments must come at the end.
-        third: ?u8,
-
-        pub const descriptions = .{
-            .first = "The first argument (required)",
-            .second = "The second argument (required)",
-            .third = "The third argument (optional)",
-        };
-    },
-
     // Subcommands can be defined through the `command` field, which should be a union with struct
     // fields which are defined the same way this struct is. Subcommands may be nested.
     // Subcommands (this union) can be made optional.
-    command: union(enum) {
+    command: ?union(enum) {
         frobnicate: struct {
             pub const descriptions = .{
                 .level = "Frobnication level",
@@ -102,8 +59,5 @@ const Flags = struct {
     // Optional declaration to define shorthands. These can be chained e.g '-fs large'.
     pub const switches = .{
         .force = 'f',
-        .age = 'a',
-        .power = 'p',
-        .size = 's',
     };
 };

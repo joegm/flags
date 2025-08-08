@@ -95,7 +95,7 @@ pub fn parse(parser: *Parser, Flags: type, comptime command_name: []const u8) Fl
         inline for (info.subcommands) |cmd| {
             if (std.mem.eql(u8, arg, cmd.command_name)) {
                 const cmd_flags = parser.parse(cmd.type, command_name ++ " " ++ cmd.command_name);
-                flags.command = @unionInit(@TypeOf(flags.command), cmd.field_name, cmd_flags);
+                flags.command = @unionInit(meta.unwrapOptional(@TypeOf(flags.command)), cmd.field_name, cmd_flags);
                 passed.command = true;
                 continue :next_arg;
             }
@@ -131,7 +131,11 @@ pub fn parse(parser: *Parser, Flags: type, comptime command_name: []const u8) Fl
     }
 
     if (info.subcommands.len > 0 and !passed.command) {
-        parser.fatal("missing subcommand", .{});
+        if (info.optional_commands) {
+            flags.command = null;
+        } else {
+            parser.fatal("missing subcommand", .{});
+        }
     }
 
     return flags;

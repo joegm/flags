@@ -29,6 +29,7 @@ pub fn build(b: *std.Build) void {
             overview,
             colors,
             trailing,
+            optional_command,
         },
         "example",
         "Example to run for example step (default = overview)",
