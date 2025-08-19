@@ -23,6 +23,7 @@ pub fn parse(
         .args = args,
         .current_arg = if (options.skip_first_arg) 1 else 0,
         .colors = options.colors,
+        .help = comptime Help.generate(Flags, meta.info(Flags), exe_name),
     };
 
     return parser.parse(Flags, exe_name);

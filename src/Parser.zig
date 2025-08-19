@@ -13,17 +13,22 @@ pub const Terminal = @import("Terminal.zig");
 args: []const [:0]const u8,
 current_arg: usize,
 colors: *const ColorScheme,
+/// The current Help of the command being parsed
+help: Help,
 
 fn fatal(parser: *const Parser, comptime fmt: []const u8, args: anytype) noreturn {
     const stderr = Terminal.init(std.io.getStdErr());
     stderr.print(parser.colors.error_label, "Error: ", .{});
-    stderr.print(parser.colors.error_message, fmt ++ "\n", args);
+    stderr.print(parser.colors.error_message, fmt ++ "\n\n", args);
+    parser.help.render(std.io.getStdErr(), parser.colors);
     std.process.exit(1);
 }
 
+/// Parse the Flags struct and return the parsed result.
+/// If an error is encounterd, the error is displayed, followed by the help menu.
 pub fn parse(parser: *Parser, Flags: type, comptime command_name: []const u8) Flags {
     const info = comptime meta.info(Flags);
-    const help = comptime Help.generate(Flags, info, command_name);
+    parser.help = comptime Help.generate(Flags, info, command_name);
 
     var flags: Flags = undefined;
     var passed: std.enums.EnumFieldStruct(std.meta.FieldEnum(Flags), bool, false) = .{};
@@ -41,7 +46,7 @@ pub fn parse(parser: *Parser, Flags: type, comptime command_name: []const u8) Fl
         }
 
         if (std.mem.eql(u8, arg, "--help") or std.mem.eql(u8, arg, "-h")) {
-            help.render(std.io.getStdOut(), parser.colors);
+            parser.help.render(std.io.getStdOut(), parser.colors);
             std.process.exit(0);
         }
 
