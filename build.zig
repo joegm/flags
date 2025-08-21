@@ -15,8 +15,7 @@ pub fn build(b: *std.Build) void {
     const tests_step = b.step("test", "Run tests");
 
     const tests = b.addTest(.{
-        .root_source_file = root,
-        .target = target,
+        .root_module = mod,
     });
 
     const tests_run = b.addRunArtifact(tests);
@@ -37,9 +36,11 @@ pub fn build(b: *std.Build) void {
 
     const example = b.addExecutable(.{
         .name = "example",
-        .root_source_file = b.path(b.fmt("examples/{s}.zig", .{@tagName(example_option)})),
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path(b.fmt("examples/{s}.zig", .{@tagName(example_option)})),
+            .target = target,
+            .optimize = optimize,
+        }),
     });
     example.root_module.addImport("flags", mod);
     const run_example = b.addRunArtifact(example);

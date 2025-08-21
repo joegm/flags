@@ -35,5 +35,5 @@ pub fn printHelp(
     options: Options,
 ) void {
     const help = comptime Help.generate(Flags, meta.info(Flags), exe_name);
-    help.render(std.io.getStdOut(), options.colors);
+    help.render(std.fs.File.stdout(), options.colors);
 }
