@@ -26,7 +26,7 @@ pub fn print(
     comptime format: []const u8,
     args: anytype,
 ) void {
-    const writer = &term.writer.interface;
+    const writer: *std.Io.Writer = &term.writer.interface;
     for (style) |color| {
         term.config.setColor(writer, color) catch @panic("Can't set color!");
     }
@@ -36,6 +36,8 @@ pub fn print(
     if (style.len > 0) {
         term.config.setColor(writer, .reset) catch @panic("Can't set color!");
     }
+
+    writer.flush() catch @panic("Flush failed!");
 }
 
 pub fn flush(term: *Terminal) void {

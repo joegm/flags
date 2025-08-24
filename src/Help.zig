@@ -25,8 +25,11 @@ pub const Usage = struct {
 
     pub fn renderToTerminal(usage: Usage, term: *Terminal, colors: *const ColorScheme) void {
         term.print(colors.header, "Usage: ", .{});
+        term.flush();
         term.print(colors.command_name, "{s}", .{usage.command});
+        term.flush();
         term.print(colors.usage, "{s}\n", .{usage.body});
+        term.flush();
     }
 
     pub fn generate(Flags: type, info: meta.FlagsInfo, command: []const u8) Usage {
