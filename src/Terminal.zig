@@ -6,29 +6,40 @@ const ColorScheme = @import("ColorScheme.zig");
 const tty = std.io.tty;
 const File = std.fs.File;
 
-writer: File.Writer,
-config: tty.Config,
+write_buffer: [1024]u8 = undefined,
+file: File,
+writer: std.fs.File.Writer = undefined,
+config: tty.Config = undefined,
 
 pub fn init(file: File) Terminal {
-    return .{
-        .writer = file.writer(),
+    var term = Terminal{
+        .file = file,
         .config = tty.detectConfig(file),
     };
+    term.writer = term.file.writer(&term.write_buffer);
+    return term;
 }
 
 pub fn print(
-    terminal: Terminal,
+    term: *Terminal,
     style: ColorScheme.Style,
     comptime format: []const u8,
     args: anytype,
 ) void {
+    const writer: *std.Io.Writer = &term.writer.interface;
     for (style) |color| {
-        terminal.config.setColor(terminal.writer, color) catch {};
+        term.config.setColor(writer, color) catch @panic("Can't set color!");
     }
 
-    terminal.writer.print(format, args) catch {};
+    writer.print(format, args) catch @panic("Print failed!");
 
     if (style.len > 0) {
-        terminal.config.setColor(terminal.writer, .reset) catch {};
+        term.config.setColor(writer, .reset) catch @panic("Can't set color!");
     }
+
+    writer.flush() catch @panic("Flush failed!");
+}
+
+pub fn flush(term: *Terminal) void {
+    term.writer.interface.flush() catch @panic("Flush failed!");
 }

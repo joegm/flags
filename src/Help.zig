@@ -18,14 +18,18 @@ pub const Usage = struct {
     body: []const u8,
 
     pub fn render(usage: Usage, stdout: File, colors: *const ColorScheme) void {
-        const term = Terminal.init(stdout);
-        usage.renderToTerminal(term, colors);
+        var term = Terminal.init(stdout);
+        defer term.flush();
+        usage.renderToTerminal(&term, colors);
     }
 
-    pub fn renderToTerminal(usage: Usage, term: Terminal, colors: *const ColorScheme) void {
+    pub fn renderToTerminal(usage: Usage, term: *Terminal, colors: *const ColorScheme) void {
         term.print(colors.header, "Usage: ", .{});
+        term.flush();
         term.print(colors.command_name, "{s}", .{usage.command});
+        term.flush();
         term.print(colors.usage, "{s}\n", .{usage.body});
+        term.flush();
     }
 
     pub fn generate(Flags: type, info: meta.FlagsInfo, command: []const u8) Usage {
@@ -99,9 +103,10 @@ const Section = struct {
     }
 };
 
-pub fn render(help: *const Help, stdout: File, colors: *const ColorScheme) void {
-    const term = Terminal.init(stdout);
-    help.usage.renderToTerminal(term, colors);
+pub fn render(help: *const Help, writer: File, colors: *const ColorScheme) void {
+    var term = Terminal.init(writer);
+    defer term.flush();
+    help.usage.renderToTerminal(&term, colors);
 
     if (help.description) |description| {
         term.print(colors.command_description, "\n{s}\n", .{description});
@@ -181,7 +186,7 @@ pub fn generate(Flags: type, info: meta.FlagsInfo, command: []const u8) Help {
     help.sections = help.sections ++ .{options};
 
     if (info.positionals.len > 0) {
-        const pos_descriptions = meta.getDescriptions(std.meta.FieldType(Flags, .positional));
+        const pos_descriptions = meta.getDescriptions(@FieldType(Flags, "positional"));
         var arguments = Section{ .header = "Arguments:" };
         for (info.positionals) |arg| {
             arguments.add(.{
@@ -203,8 +208,9 @@ pub fn generate(Flags: type, info: meta.FlagsInfo, command: []const u8) Help {
         help.sections = help.sections ++ .{arguments};
     }
     if (info.subcommands.len > 0) {
-        const cmd_descriptions = meta.getDescriptions(std.meta.FieldType(Flags, .command));
-        var commands = Section{ .header = "Commands:" };
+        const T = meta.unwrapOptional(@FieldType(Flags, "command"));
+        const cmd_descriptions = meta.getDescriptions(T);
+        var commands = Section{ .header = if (info.optional_commands) "Commands: [Optional]" else "Commands:" };
         for (info.subcommands) |cmd| commands.add(.{
             .name = cmd.command_name,
             .desc = @field(cmd_descriptions, cmd.field_name),

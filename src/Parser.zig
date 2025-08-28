@@ -13,17 +13,23 @@ pub const Terminal = @import("Terminal.zig");
 args: []const [:0]const u8,
 current_arg: usize,
 colors: *const ColorScheme,
+/// The current Help of the command being parsed
+help: Help,
 
 fn fatal(parser: *const Parser, comptime fmt: []const u8, args: anytype) noreturn {
-    const stderr = Terminal.init(std.io.getStdErr());
-    stderr.print(parser.colors.error_label, "Error: ", .{});
-    stderr.print(parser.colors.error_message, fmt ++ "\n", args);
+    var term = Terminal.init(std.fs.File.stderr());
+    term.print(parser.colors.error_label, "Error: ", .{});
+    term.print(parser.colors.error_message, fmt ++ "\n\n", args);
+    term.flush();
+    parser.help.render(std.fs.File.stderr(), parser.colors);
     std.process.exit(1);
 }
 
+/// Parse the Flags struct and return the parsed result.
+/// If an error is encounterd, the error is displayed, followed by the help menu.
 pub fn parse(parser: *Parser, Flags: type, comptime command_name: []const u8) Flags {
     const info = comptime meta.info(Flags);
-    const help = comptime Help.generate(Flags, info, command_name);
+    parser.help = comptime Help.generate(Flags, info, command_name);
 
     var flags: Flags = undefined;
     var passed: std.enums.EnumFieldStruct(std.meta.FieldEnum(Flags), bool, false) = .{};
@@ -41,7 +47,7 @@ pub fn parse(parser: *Parser, Flags: type, comptime command_name: []const u8) Fl
         }
 
         if (std.mem.eql(u8, arg, "--help") or std.mem.eql(u8, arg, "-h")) {
-            help.render(std.io.getStdOut(), parser.colors);
+            parser.help.render(std.fs.File.stdout(), parser.colors);
             std.process.exit(0);
         }
 
@@ -95,7 +101,7 @@ pub fn parse(parser: *Parser, Flags: type, comptime command_name: []const u8) Fl
         inline for (info.subcommands) |cmd| {
             if (std.mem.eql(u8, arg, cmd.command_name)) {
                 const cmd_flags = parser.parse(cmd.type, command_name ++ " " ++ cmd.command_name);
-                flags.command = @unionInit(@TypeOf(flags.command), cmd.field_name, cmd_flags);
+                flags.command = @unionInit(meta.unwrapOptional(@TypeOf(flags.command)), cmd.field_name, cmd_flags);
                 passed.command = true;
                 continue :next_arg;
             }
@@ -131,7 +137,11 @@ pub fn parse(parser: *Parser, Flags: type, comptime command_name: []const u8) Fl
     }
 
     if (info.subcommands.len > 0 and !passed.command) {
-        parser.fatal("missing subcommand", .{});
+        if (info.optional_commands) {
+            flags.command = null;
+        } else {
+            parser.fatal("missing subcommand", .{});
+        }
     }
 
     return flags;

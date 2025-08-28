@@ -4,6 +4,7 @@ pub const FlagsInfo = struct {
     flags: []const Flag = &.{},
     positionals: []const Positional = &.{},
     subcommands: []const SubCommand = &.{},
+    optional_commands: bool = false,
 };
 
 const SubCommand = struct {
@@ -79,12 +80,24 @@ pub fn info(comptime Flags: type) FlagsInfo {
                 }};
             }
         } else if (std.mem.eql(u8, field.name, "command")) {
-            if (@typeInfo(field.type) != .@"union") compileError(
-                "command field type is not a union: {s}",
-                .{@typeName(field.type)},
-            );
-
-            for (@typeInfo(field.type).@"union".fields) |cmd| {
+            const cmd_type = @typeInfo(field.type);
+            switch (cmd_type) {
+                .@"union" => {},
+                .optional => |o| {
+                    const opt_cmd_type = @typeInfo(o.child);
+                    if (opt_cmd_type != .@"union") compileError(
+                        "command field type is not a union: {s}",
+                        .{@typeName(field.type)},
+                    );
+                    command.optional_commands = true;
+                },
+                else => compileError(
+                    "command field type is not a union: {s}",
+                    .{@typeName(field.type)},
+                ),
+            }
+            const u = @typeInfo(unwrapOptional(field.type)).@"union";
+            for (u.fields) |cmd| {
                 command.subcommands = command.subcommands ++ .{SubCommand{
                     .type = cmd.type,
                     .field_name = cmd.name,
