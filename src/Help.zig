@@ -18,7 +18,8 @@ pub const Usage = struct {
     body: []const u8,
 
     pub fn render(usage: Usage, stdout: File, colors: *const ColorScheme) void {
-        const term = Terminal.init(stdout);
+        var stdout_writer = stdout.writer(&.{});
+        const term = Terminal.init(stdout, &stdout_writer.interface);
         usage.renderToTerminal(term, colors);
     }
 
@@ -100,7 +101,8 @@ const Section = struct {
 };
 
 pub fn render(help: *const Help, stdout: File, colors: *const ColorScheme) void {
-    const term = Terminal.init(stdout);
+    var stdout_writer = stdout.writer(&.{});
+    const term = Terminal.init(stdout, &stdout_writer.interface);
     help.usage.renderToTerminal(term, colors);
 
     if (help.description) |description| {
@@ -181,7 +183,7 @@ pub fn generate(Flags: type, info: meta.FlagsInfo, command: []const u8) Help {
     help.sections = help.sections ++ .{options};
 
     if (info.positionals.len > 0) {
-        const pos_descriptions = meta.getDescriptions(std.meta.FieldType(Flags, .positional));
+        const pos_descriptions = meta.getDescriptions(@FieldType(Flags, "positional"));
         var arguments = Section{ .header = "Arguments:" };
         for (info.positionals) |arg| {
             arguments.add(.{
@@ -203,7 +205,7 @@ pub fn generate(Flags: type, info: meta.FlagsInfo, command: []const u8) Help {
         help.sections = help.sections ++ .{arguments};
     }
     if (info.subcommands.len > 0) {
-        const cmd_descriptions = meta.getDescriptions(std.meta.FieldType(Flags, .command));
+        const cmd_descriptions = meta.getDescriptions(@FieldType(Flags, "command"));
         var commands = Section{ .header = "Commands:" };
         for (info.subcommands) |cmd| commands.add(.{
             .name = cmd.command_name,

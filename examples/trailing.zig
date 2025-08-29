@@ -10,10 +10,11 @@ pub fn main() !void {
 
     const options = flags.parse(args, "trailing", Flags, .{});
 
-    try std.json.stringify(
+    var stdout_writer = std.fs.File.stdout().writer(&.{});
+    try std.json.Stringify.value(
         options,
         .{ .whitespace = .indent_2 },
-        std.io.getStdOut().writer(),
+        &stdout_writer.interface,
     );
 }
 
