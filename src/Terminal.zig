@@ -3,7 +3,7 @@ const Terminal = @This();
 const std = @import("std");
 const ColorScheme = @import("ColorScheme.zig");
 
-const tty = std.io.tty;
+const tty = std.Io.tty;
 const File = std.fs.File;
 
 writer: *std.Io.Writer,
