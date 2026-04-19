@@ -1,17 +1,16 @@
 const std = @import("std");
 const flags = @import("flags");
 
-pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}).init;
-    defer _ = gpa.deinit();
+pub fn main(init: std.process.Init) !void {
+    const io = init.io;
+    const gpa = init.gpa;
+    const args = try init.minimal.args.toSlice(gpa);
+    defer gpa.free(args);
 
-    const args = try std.process.argsAlloc(gpa.allocator());
-    defer std.process.argsFree(gpa.allocator(), args);
-
-    const options = flags.parse(args, "overview", Flags, .{});
+    const options = flags.parse(io, args, "overview", Flags, .{});
 
     var buffer: [1024]u8 = undefined;
-    var file_writer = std.fs.File.stdout().writer(&buffer);
+    var file_writer = std.Io.File.stdout().writer(io, &buffer);
     try std.json.Stringify.value(
         options,
         .{ .whitespace = .indent_2 },
