@@ -13,6 +13,7 @@ pub const Options = struct {
 };
 
 pub fn parse(
+    io: std.Io,
     args: []const [:0]const u8,
     /// The name of your program.
     comptime exe_name: []const u8,
@@ -26,14 +27,15 @@ pub fn parse(
         .help = comptime Help.generate(Flags, meta.info(Flags), exe_name),
     };
 
-    return parser.parse(Flags, exe_name);
+    return parser.parse(io, Flags, exe_name);
 }
 
 pub fn printHelp(
+    io: std.Io,
     comptime exe_name: []const u8,
     Flags: type,
     options: Options,
 ) void {
     const help = comptime Help.generate(Flags, meta.info(Flags), exe_name);
-    help.render(std.fs.File.stdout(), options.colors);
+    help.render(io, std.Io.File.stdout(), options.colors);
 }

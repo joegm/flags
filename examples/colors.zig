@@ -1,17 +1,13 @@
 const std = @import("std");
 const flags = @import("flags");
 
-pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}).init;
-    defer _ = gpa.deinit();
+pub fn main(init: std.process.Init) !void {
+    const args = try init.minimal.args.toSlice(init.arena.allocator());
 
-    const args = try std.process.argsAlloc(gpa.allocator());
-    defer std.process.argsFree(gpa.allocator(), args);
-
-    _ = flags.parse(args, "colors", Flags, .{
+    _ = flags.parse(init.io, args, "colors", Flags, .{
         // Use the `colors` option to provide a colorscheme for the error/help messages.
         // Specifying this as empty: `.colors = &.{}` will disable colors.
-        // Each field is a list of type `std.io.tty.Color`.
+        // Each field is a list of type `std.Io.Terminal.Color`.
         .colors = &flags.ColorScheme{
             .error_label = &.{ .bright_red, .bold },
             .command_name = &.{.bright_green},

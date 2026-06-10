@@ -3,7 +3,7 @@ const Help = @This();
 const std = @import("std");
 const meta = @import("meta.zig");
 
-const File = std.fs.File;
+const File = std.Io.File;
 const ColorScheme = @import("ColorScheme.zig");
 const Terminal = @import("Terminal.zig");
 
@@ -17,8 +17,9 @@ pub const Usage = struct {
     command: []const u8,
     body: []const u8,
 
-    pub fn render(usage: Usage, stdout: File, colors: *const ColorScheme) void {
-        var term = Terminal.init(stdout);
+    pub fn render(usage: Usage, io: std.Io, stdout: File, colors: *const ColorScheme) void {
+        var term = Terminal.init(io, stdout);
+        term.fixSelfRef();
         defer term.flush();
         usage.renderToTerminal(&term, colors);
     }
@@ -103,8 +104,9 @@ const Section = struct {
     }
 };
 
-pub fn render(help: *const Help, writer: File, colors: *const ColorScheme) void {
-    var term = Terminal.init(writer);
+pub fn render(help: *const Help, io: std.Io, writer: File, colors: *const ColorScheme) void {
+    var term = Terminal.init(io, writer);
+    term.fixSelfRef();
     defer term.flush();
     help.usage.renderToTerminal(&term, colors);
 
