@@ -2,18 +2,19 @@ const std = @import("std");
 const flags = @import("flags");
 
 pub fn main(init: std.process.Init) !void {
-    const allocator = init.arena.allocator();
     const io = init.io;
+    const gpa = init.gpa;
 
-    const args = try init.minimal.args.toSlice(allocator);
+    const args = try init.minimal.args.toSlice(gpa);
+    defer gpa.free(args);
 
     const options = flags.parse(io, args, "trailing", Flags, .{});
 
-    var stdout = std.Io.File.stdout().writerStreaming(io, &.{});
+    var stdout_writer = std.Io.File.stdout().writer(io, &.{});
     try std.json.Stringify.value(
         options,
         .{ .whitespace = .indent_2 },
-        &stdout.interface,
+        &stdout_writer.interface,
     );
 }
 

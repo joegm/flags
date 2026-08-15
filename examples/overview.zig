@@ -2,20 +2,21 @@ const std = @import("std");
 const flags = @import("flags");
 
 pub fn main(init: std.process.Init) !void {
-    const allocator = init.arena.allocator();
     const io = init.io;
-
-    const args = try init.minimal.args.toSlice(allocator);
+    const gpa = init.gpa;
+    const args = try init.minimal.args.toSlice(gpa);
+    defer gpa.free(args);
 
     const options = flags.parse(io, args, "overview", Flags, .{});
 
-    var stdout = std.Io.File.stdout().writerStreaming(io, &.{});
-
+    var buffer: [1024]u8 = undefined;
+    var file_writer = std.Io.File.stdout().writer(io, &buffer);
     try std.json.Stringify.value(
         options,
         .{ .whitespace = .indent_2 },
-        &stdout.interface,
+        &file_writer.interface,
     );
+    try file_writer.interface.flush();
 }
 
 const Flags = struct {
