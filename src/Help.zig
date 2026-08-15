@@ -75,7 +75,7 @@ pub const Usage = struct {
     fn add(usage: *Usage, item: []const u8, line_len: *usize) void {
         if (line_len.* + " ".len + item.len > max_line_len) {
             const indent_len = "Usage: ".len + usage.command.len;
-            usage.body = usage.body ++ '\n' ++ ' ' * indent_len;
+            usage.body = usage.body ++ "\n" ++ " " ** indent_len;
             line_len.* = indent_len;
         }
 
