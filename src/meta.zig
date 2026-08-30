@@ -51,53 +51,63 @@ pub fn info(comptime Flags: type) FlagsInfo {
 
     const switches = getSwitches(Flags);
 
-    for (@typeInfo(Flags).@"struct".fields) |field| {
-        if (std.mem.eql(u8, field.name, "positional")) {
-            if (@typeInfo(field.type) != .@"struct") compileError(
+    const FlagsTypeInfo = @typeInfo(Flags).@"struct";
+    for (0..FlagsTypeInfo.field_names.len) |field_index| {
+        const field_name = FlagsTypeInfo.field_names[field_index];
+        const field_type = FlagsTypeInfo.field_types[field_index];
+        const field_attrs = FlagsTypeInfo.field_attrs[field_index];
+
+        if (std.mem.eql(u8, field_name, "positional")) {
+            if (@typeInfo(field_type) != .@"struct") compileError(
                 "'positional' field is not a struct type: {s}",
-                .{@typeName(field.type)},
+                .{@typeName(field_type)},
             );
 
+            const PosTypeInfo = @typeInfo(field_type).@"struct";
             var seen_optional = false;
-            for (@typeInfo(field.type).@"struct".fields) |positional| {
-                if (std.mem.eql(u8, positional.name, "trailing")) {
+            for (0..PosTypeInfo.field_names.len) |positional_index| {
+                const positional_name = PosTypeInfo.field_names[positional_index];
+                const positional_type = PosTypeInfo.field_types[positional_index];
+                const positional_attrs = PosTypeInfo.field_attrs[positional_index];
+                if (std.mem.eql(u8, positional_name, "trailing")) {
                     continue;
                 }
-                if (@typeInfo(positional.type) != .optional) {
+                if (@typeInfo(positional_type) != .optional) {
                     if (seen_optional) compileError(
                         "non-optional positional field after optional: {s}",
-                        .{positional.name},
+                        .{positional_name},
                     );
                 } else {
                     seen_optional = true;
                 }
                 command.positionals = command.positionals ++ .{Positional{
-                    .type = positional.type,
-                    .default_value = positional.default_value_ptr,
-                    .field_name = positional.name,
-                    .arg_name = positionalName(positional),
+                    .type = positional_type,
+                    .default_value = positional_attrs.default_value_ptr,
+                    .field_name = positional_name,
+                    .arg_name = positionalName(positional_name),
                 }};
             }
-        } else if (std.mem.eql(u8, field.name, "command")) {
-            if (@typeInfo(field.type) != .@"union") compileError(
+        } else if (std.mem.eql(u8, field_name, "command")) {
+            if (@typeInfo(field_type) != .@"union") compileError(
                 "command field type is not a union: {s}",
-                .{@typeName(field.type)},
+                .{@typeName(field_type)},
             );
 
-            for (@typeInfo(field.type).@"union".fields) |cmd| {
+            const UnionTypeInfo = @typeInfo(field_type).@"union";
+            for (0..UnionTypeInfo.field_names.len) |cmd_index| {
                 command.subcommands = command.subcommands ++ .{SubCommand{
-                    .type = cmd.type,
-                    .field_name = cmd.name,
-                    .command_name = toKebab(cmd.name),
+                    .type = UnionTypeInfo.field_types[cmd_index],
+                    .field_name = UnionTypeInfo.field_names[cmd_index],
+                    .command_name = toKebab(UnionTypeInfo.field_names[cmd_index]),
                 }};
             }
         } else {
             command.flags = command.flags ++ .{Flag{
-                .type = field.type,
-                .default_value = field.default_value_ptr,
-                .field_name = field.name,
-                .flag_name = "--" ++ toKebab(field.name),
-                .switch_char = @field(switches, field.name),
+                .type = field_type,
+                .default_value = field_attrs.default_value_ptr,
+                .field_name = field_name,
+                .flag_name = "--" ++ toKebab(field_name),
+                .switch_char = @field(switches, field_name),
             }};
         }
     }
@@ -127,13 +137,14 @@ fn getSwitches(T: type) FieldAttr(T, u8) {
         compileError("switches is not a struct value: {s}", .{@typeName(Switches)});
     }
 
-    const switch_fields = @typeInfo(Switches).@"struct".fields;
-    for (switch_fields, 0..) |switch_field, field_index| {
-        if (!@hasField(T, switch_field.name)) {
-            compileError("switch name does not match any field: {s}", .{switch_field.name});
+    const SwitchTypeInfo = @typeInfo(Switches).@"struct";
+    for (0..SwitchTypeInfo.field_names.len) |field_index| {
+        const switch_field = SwitchTypeInfo.field_names[field_index];
+        if (!@hasField(T, switch_field)) {
+            compileError("switch name does not match any field: {s}", .{switch_field});
         }
 
-        const switch_val = @field(T.switches, switch_field.name);
+        const switch_val = @field(T.switches, switch_field);
         if (@TypeOf(switch_val) != comptime_int) {
             compileError("switch value is not a character: {any}", .{switch_val});
         }
@@ -144,15 +155,15 @@ fn getSwitches(T: type) FieldAttr(T, u8) {
             compileError("switch character is not a letter or digit: {c}", .{switch_char});
         }
 
-        for (switch_fields[field_index + 1 ..]) |other_field| {
-            const other_val = @field(T.switches, other_field.name);
+        for (SwitchTypeInfo.field_names[field_index + 1 ..]) |other_field| {
+            const other_val = @field(T.switches, other_field);
             if (switch_val == other_val) compileError(
                 "duplicate switch values: {s} and {s}",
-                .{ switch_field.name, other_field.name },
+                .{ switch_field, other_field },
             );
         }
 
-        @field(switches, switch_field.name) = switch_char;
+        @field(switches, switch_field) = switch_char;
     }
 
     return switches;
@@ -170,13 +181,15 @@ pub fn getDescriptions(T: type) FieldAttr(T, []const u8) {
         compileError("descriptions is not a struct value: {s}", .{@typeName(D)});
     }
 
-    for (@typeInfo(D).@"struct".fields) |field| {
-        if (!@hasField(T, field.name)) {
-            compileError("description name does not match any field: '{s}'", .{field.name});
+    const DTypeInfo = @typeInfo(D).@"struct";
+    for (0..DTypeInfo.field_names.len) |field_index| {
+        const field_name = DTypeInfo.field_names[field_index];
+        if (!@hasField(T, field_name)) {
+            compileError("description name does not match any field: '{s}'", .{field_name});
         }
 
-        const description = @field(T.descriptions, field.name);
-        @field(descriptions, field.name) =
+        const description = @field(T.descriptions, field_name);
+        @field(descriptions, field_name) =
             @as([]const u8, description); // description must be a string
     }
 
@@ -194,13 +207,15 @@ pub fn getFormats(T: type) FieldAttr(T, []const u8) {
         compileError("formats is not a struct value: {s}", .{@typeName(F)});
     }
 
-    for (@typeInfo(F).@"struct".fields) |field| {
-        if (!@hasField(T, field.name)) {
-            compileError("format name does not match any field: {s}", .{field.name});
+    const FTypeInfo = @typeInfo(F).@"struct";
+    for (0..FTypeInfo.field_names.len) |field_index| {
+        const field_name = FTypeInfo.field_names[field_index];
+        if (!@hasField(T, field_name)) {
+            compileError("format name does not match any field: {s}", .{field_name});
         }
 
-        const format = @field(T.formats, field.name);
-        @field(formats, field.name) =
+        const format = @field(T.formats, field_name);
+        @field(formats, field_name) =
             @as([]const u8, format); // format must be a string
     }
 
@@ -226,9 +241,9 @@ pub fn defaultValue(comptime option: anytype) ?option.type {
 }
 
 /// Converts "positional_field" to "<POSITIONAL_FIELD>.".
-pub fn positionalName(comptime field: std.builtin.Type.StructField) []const u8 {
+pub fn positionalName(comptime field_name: []const u8) []const u8 {
     comptime var upper: []const u8 = &.{};
-    comptime for (field.name) |c| {
+    comptime for (field_name) |c| {
         upper = upper ++ .{std.ascii.toUpper(c)};
     };
     return std.fmt.comptimePrint("<{s}>", .{upper});

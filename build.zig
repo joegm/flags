@@ -45,6 +45,6 @@ pub fn build(b: *std.Build) void {
     });
     example.root_module.addImport("flags", mod);
     const run_example = b.addRunArtifact(example);
-    if (b.args) |args| run_example.addArgs(args);
+    run_example.addPassthruArgs(); // Zig 0.17+
     example_step.dependOn(&run_example.step);
 }
