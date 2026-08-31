@@ -2,7 +2,7 @@ const ColorScheme = @This();
 
 const std = @import("std");
 
-const Color = std.Io.tty.Color;
+const Color = std.Io.Terminal.Color;
 
 pub const Style = []const Color;
 

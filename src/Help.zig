@@ -3,7 +3,7 @@ const Help = @This();
 const std = @import("std");
 const meta = @import("meta.zig");
 
-const File = std.fs.File;
+const File = std.Io.File;
 const ColorScheme = @import("ColorScheme.zig");
 const Terminal = @import("Terminal.zig");
 
@@ -17,9 +17,9 @@ pub const Usage = struct {
     command: []const u8,
     body: []const u8,
 
-    pub fn render(usage: Usage, stdout: File, colors: *const ColorScheme) void {
-        var stdout_writer = stdout.writer(&.{});
-        const term = Terminal.init(stdout, &stdout_writer.interface);
+    pub fn render(io: std.Io, usage: Usage, stdout: File, colors: *const ColorScheme) void {
+        var stdout_writer = stdout.writerStreaming(io, &.{});
+        const term = Terminal.init(io, stdout, &stdout_writer.interface) catch unreachable;
         usage.renderToTerminal(term, colors);
     }
 
@@ -75,7 +75,11 @@ pub const Usage = struct {
     fn add(usage: *Usage, item: []const u8, line_len: *usize) void {
         if (line_len.* + " ".len + item.len > max_line_len) {
             const indent_len = "Usage: ".len + usage.command.len;
-            usage.body = usage.body ++ "\n" ++ " " ** indent_len;
+            usage.body = usage.body ++ "\n" ++ comptime blk: {
+                var indent: [indent_len]u8 = undefined;
+                @memset(&indent, ' ');
+                break :blk &indent;
+            };
             line_len.* = indent_len;
         }
 
@@ -100,9 +104,9 @@ const Section = struct {
     }
 };
 
-pub fn render(help: *const Help, stdout: File, colors: *const ColorScheme) void {
-    var stdout_writer = stdout.writer(&.{});
-    const term = Terminal.init(stdout, &stdout_writer.interface);
+pub fn render(help: *const Help, io: std.Io, stdout: File, colors: *const ColorScheme) void {
+    var stdout_writer = stdout.writerStreaming(io, &.{});
+    const term = Terminal.init(io, stdout, &stdout_writer.interface) catch unreachable;
     help.usage.renderToTerminal(term, colors);
 
     if (help.description) |description| {
@@ -166,10 +170,11 @@ pub fn generate(Flags: type, info: meta.FlagsInfo, command: []const u8) Help {
         const T = meta.unwrapOptional(flag.type);
         if (@typeInfo(T) == .@"enum") {
             const variant_descriptions = meta.getDescriptions(T);
-            for (@typeInfo(T).@"enum".fields) |variant| {
+            const enum_info = @typeInfo(T).@"enum";
+            for (enum_info.field_names) |variant_name| {
                 options.add(.{
-                    .name = "  " ++ meta.toKebab(variant.name),
-                    .desc = @field(variant_descriptions, variant.name),
+                    .name = "  " ++ meta.toKebab(variant_name),
+                    .desc = @field(variant_descriptions, variant_name),
                 });
             }
         }
@@ -194,10 +199,11 @@ pub fn generate(Flags: type, info: meta.FlagsInfo, command: []const u8) Help {
             const T = meta.unwrapOptional(arg.type);
             if (@typeInfo(T) == .@"enum") {
                 const variant_descriptions = meta.getDescriptions(T);
-                for (@typeInfo(T).@"enum".fields) |variant| {
+                const enum_info = @typeInfo(T).@"enum";
+                for (enum_info.field_names) |variant_name| {
                     arguments.add(.{
-                        .name = "  " ++ meta.toKebab(variant.name),
-                        .desc = @field(variant_descriptions, variant.name),
+                        .name = "  " ++ meta.toKebab(variant_name),
+                        .desc = @field(variant_descriptions, variant_name),
                     });
                 }
             }

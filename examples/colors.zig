@@ -1,14 +1,14 @@
 const std = @import("std");
 const flags = @import("flags");
 
-pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}).init;
-    defer _ = gpa.deinit();
+pub fn main(init: std.process.Init) !void {
+    const io = init.io;
+    const gpa = init.gpa;
 
-    const args = try std.process.argsAlloc(gpa.allocator());
-    defer std.process.argsFree(gpa.allocator(), args);
+    const args = try init.minimal.args.toSlice(gpa);
+    defer gpa.free(args);
 
-    _ = flags.parse(args, "colors", Flags, .{
+    _ = flags.parse(io, args, "colors", Flags, .{
         // Use the `colors` option to provide a colorscheme for the error/help messages.
         // Specifying this as empty: `.colors = &.{}` will disable colors.
         // Each field is a list of type `std.io.tty.Color`.

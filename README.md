@@ -24,7 +24,7 @@ pub fn main() !void {
         .{},
     );
 
-    try std.io.getStdOut().writer().print("Hello, {s}!\n", .{cli.username});
+    try std.debug.print("Hello, {s}!\n", .{cli.username});
 }
 
 const std = @import("std");
