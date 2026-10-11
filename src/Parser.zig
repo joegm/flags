@@ -214,9 +214,9 @@ fn parseValue(parser: *const Parser, io: std.Io, T: type, arg: [:0]const u8) T {
         },
 
         .@"enum" => |info| {
-            inline for (info.fields) |field| {
-                if (std.mem.eql(u8, arg, meta.toKebab(field.name))) {
-                    return @enumFromInt(field.value);
+            inline for (info.field_names, info.field_values) |field_name, field_value| {
+                if (std.mem.eql(u8, arg, meta.toKebab(field_name))) {
+                    return @fromBackingInt(@intCast(field_value));
                 }
             }
 

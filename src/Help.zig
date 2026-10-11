@@ -79,7 +79,8 @@ pub const Usage = struct {
     fn add(usage: *Usage, item: []const u8, line_len: *usize) void {
         if (line_len.* + " ".len + item.len > max_line_len) {
             const indent_len = "Usage: ".len + usage.command.len;
-            usage.body = usage.body ++ "\n" ++ " " ** indent_len;
+            const indent_str: [indent_len]u8 = @splat(' ');
+            usage.body = usage.body ++ "\n" ++ indent_str;
             line_len.* = indent_len;
         }
 
@@ -171,10 +172,10 @@ pub fn generate(Flags: type, info: meta.FlagsInfo, command: []const u8) Help {
         const T = meta.unwrapOptional(flag.type);
         if (@typeInfo(T) == .@"enum") {
             const variant_descriptions = meta.getDescriptions(T);
-            for (@typeInfo(T).@"enum".fields) |variant| {
+            for (@typeInfo(T).@"enum".field_names) |variant_name| {
                 options.add(.{
-                    .name = "  " ++ meta.toKebab(variant.name),
-                    .desc = @field(variant_descriptions, variant.name),
+                    .name = "  " ++ meta.toKebab(variant_name),
+                    .desc = @field(variant_descriptions, variant_name),
                 });
             }
         }
@@ -199,10 +200,10 @@ pub fn generate(Flags: type, info: meta.FlagsInfo, command: []const u8) Help {
             const T = meta.unwrapOptional(arg.type);
             if (@typeInfo(T) == .@"enum") {
                 const variant_descriptions = meta.getDescriptions(T);
-                for (@typeInfo(T).@"enum".fields) |variant| {
+                for (@typeInfo(T).@"enum".field_names) |variant_name| {
                     arguments.add(.{
-                        .name = "  " ++ meta.toKebab(variant.name),
-                        .desc = @field(variant_descriptions, variant.name),
+                        .name = "  " ++ meta.toKebab(variant_name),
+                        .desc = @field(variant_descriptions, variant_name),
                     });
                 }
             }
